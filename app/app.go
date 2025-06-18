@@ -397,7 +397,7 @@ func NewBabylonApp(
 		upgradetypes.ModuleName,
 		// NOTE: incentive module's BeginBlock has to be after mint but before distribution
 		// so that it can intercept a part of new inflation to reward BTC staking stakeholders
-		minttypes.ModuleName, incentivetypes.ModuleName, distrtypes.ModuleName,
+		minttypes.ModuleName, incentivetypes.ModuleName, distrtypes.ModuleName, //
 		// Cosmos EVM
 		erc20types.ModuleName,
 		feemarkettypes.ModuleName,
@@ -410,11 +410,11 @@ func NewBabylonApp(
 		// Token factory
 		tokenfactorytypes.ModuleName,
 		// Babylon modules
-		epochingtypes.ModuleName,
-		btclightclienttypes.ModuleName,
-		btccheckpointtypes.ModuleName,
-		checkpointingtypes.ModuleName,
-		monitortypes.ModuleName,
+		epochingtypes.ModuleName,       //
+		btclightclienttypes.ModuleName, // nop
+		btccheckpointtypes.ModuleName,  // nop
+		checkpointingtypes.ModuleName,  //
+		monitortypes.ModuleName,        // nop
 		// IBC-related modules
 		ibcexported.ModuleName,
 		ibcwasmtypes.ModuleName,
@@ -422,12 +422,12 @@ func NewBabylonApp(
 		wasmtypes.ModuleName,
 		ratelimittypes.ModuleName,
 		// Integration related modules
-		bsctypes.ModuleName,
-		zctypes.ModuleName,
-		btcstkconsumertypes.ModuleName,
+		bsctypes.ModuleName,            // nop, duplicated with btcstkconsumertypes
+		zctypes.ModuleName,             // nop
+		btcstkconsumertypes.ModuleName, // nop
 		// BTC staking related modules
-		btcstakingtypes.ModuleName,
-		finalitytypes.ModuleName,
+		btcstakingtypes.ModuleName, //
+		finalitytypes.ModuleName,   //
 	)
 	// TODO: there will be an architecture design on whether to modify slashing/evidence, specifically
 	// - how many validators can we slash in a single epoch and
@@ -444,11 +444,11 @@ func NewBabylonApp(
 		// Token factory
 		tokenfactorytypes.ModuleName,
 		// Babylon modules
-		epochingtypes.ModuleName,
-		btclightclienttypes.ModuleName,
-		btccheckpointtypes.ModuleName,
-		checkpointingtypes.ModuleName,
-		monitortypes.ModuleName,
+		epochingtypes.ModuleName,       //
+		btclightclienttypes.ModuleName, // nop
+		btccheckpointtypes.ModuleName,  //
+		checkpointingtypes.ModuleName,  //
+		monitortypes.ModuleName,        // nop
 		// IBC-related modules
 		ibcexported.ModuleName,
 		ibcwasmtypes.ModuleName,
@@ -456,14 +456,14 @@ func NewBabylonApp(
 		wasmtypes.ModuleName,
 		ratelimittypes.ModuleName,
 		// Integration related modules
-		bsctypes.ModuleName,
-		zctypes.ModuleName,
-		btcstkconsumertypes.ModuleName,
+		bsctypes.ModuleName,            // nop, duplicated with btcstkconsumertypes
+		zctypes.ModuleName,             //
+		btcstkconsumertypes.ModuleName, // nop
 		// BTC staking related modules
-		btcstakingtypes.ModuleName,
-		finalitytypes.ModuleName,
+		btcstakingtypes.ModuleName, //
+		finalitytypes.ModuleName,   //
 		// tokenomics related modules
-		incentivetypes.ModuleName, // EndBlock of incentive module does not matter
+		incentivetypes.ModuleName, // EndBlock of incentive module does not matter // nop
 		// Cosmos EVM
 		evmtypes.ModuleName,
 		erc20types.ModuleName,

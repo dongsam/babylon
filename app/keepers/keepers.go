@@ -560,7 +560,7 @@ func (ak *AppKeepers) InitKeepers(
 
 	ak.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-		// register the governance hooks
+			// register the governance hooks
 		),
 	)
 
@@ -674,10 +674,10 @@ func (ak *AppKeepers) InitKeepers(
 		&checkpointingKeeper,
 		&btcCheckpointKeeper,
 		epochingKeeper,
-		storeQuerier,
+		storeQuerier, // need to check
 		&ak.BTCStakingKeeper,
 		&ak.BTCStkConsumerKeeper,
-		appparams.AccGov.String(),
+		appparams.AccGov.String(), // need to check for address or module name
 	)
 
 	// make ZoneConcierge and Monitor to subscribe to the epoching's hooks

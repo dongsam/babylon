@@ -173,7 +173,7 @@ func (im IBCModule) OnRecvPacket(
 		if err != nil {
 			return channeltypes.NewErrorAcknowledgement(err)
 		}
-		return channeltypes.NewResultAcknowledgement([]byte("Consumer slashing handled successfully"))
+		return channeltypes.NewResultAcknowledgement([]byte("Consumer slashing handled successfully")) // should 1?
 	default:
 		errMsg := fmt.Sprintf("unrecognized inbound packet type: %T", packet)
 		return channeltypes.NewErrorAcknowledgement(errorsmod.Wrap(sdkerrors.ErrUnknownRequest, errMsg))
@@ -233,6 +233,7 @@ func (im IBCModule) OnTimeoutPacket(
 ) error {
 	var packetData types.InboundPacket
 	if err := packetData.Unmarshal(modulePacket.GetData()); err != nil {
+		// TODO: define timeout error type
 		return errorsmod.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal packet data: %s", err.Error())
 	}
 
