@@ -63,10 +63,12 @@ func (ms msgServer) ResumeFinalityProposal(goCtx context.Context, req *types.Msg
 func (ms msgServer) AddFinalitySig(goCtx context.Context, req *types.MsgAddFinalitySig) (*types.MsgAddFinalitySigResponse, error) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), types.MetricsKeyAddFinalitySig)
 
+	// TODO: bottleneck, duplicated validatebasic
 	if err := req.ValidateBasic(); err != nil {
 		return nil, err
 	}
 
+	// TODO: bottleneck, concrete height check
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	activationHeight, errMod := ms.validateActivationHeight(ctx, req.BlockHeight)
 	if errMod != nil {

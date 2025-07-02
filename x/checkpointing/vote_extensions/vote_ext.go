@@ -51,6 +51,7 @@ func (h *VoteExtensionHandler) ExtendVote() sdk.ExtendVoteHandler {
 			return emptyRes, nil
 		}
 
+		// TODO: bottleneck caching valset for this block or epoch
 		// 1. get validator address for VoteExtension structure
 		valOperAddr, err := k.GetValidatorAddress(ctx)
 		if err != nil {

@@ -9,6 +9,7 @@ import (
 	"github.com/babylonlabs-io/babylon/v2/x/finality/types"
 )
 
+// TODO: bottleneck
 // TallyBlocks tries to finalise all blocks that are non-finalised AND have a non-nil
 // finality provider set, from earliest to the latest.
 //

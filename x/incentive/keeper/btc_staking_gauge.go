@@ -69,6 +69,7 @@ func (k Keeper) RewardBTCStaking(ctx context.Context, height uint64, dc *ftypes.
 			panic(fmt.Errorf("failed to add fp rewards for btc delegation %s at height %d: %w", fp.GetAddress().String(), height, err))
 		}
 	}
+	// TODO: bottleneck, need to check
 	// TODO: prune unnecessary state (delete BTCStakingGauge after the amount is used)
 }
 

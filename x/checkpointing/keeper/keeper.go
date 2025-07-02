@@ -94,6 +94,7 @@ func (k Keeper) SealCheckpoint(ctx context.Context, ckptWithMeta *types.RawCheck
 }
 
 func (k Keeper) VerifyBLSSig(ctx context.Context, sig *types.BlsSig) error {
+	// TODO: bottleneck caching val/bls map for this block or epoch
 	// get signer's address
 	signerAddr, err := sdk.ValAddressFromBech32(sig.SignerAddress)
 	if err != nil {
@@ -120,7 +121,7 @@ func (k Keeper) VerifyBLSSig(ctx context.Context, sig *types.BlsSig) error {
 
 func (k Keeper) GetVotingPowerByAddress(ctx context.Context, epochNum uint64, valAddr sdk.ValAddress) (int64, error) {
 	vals := k.GetValidatorSet(ctx, epochNum)
-
+	// TODO: bottleneck, we don't need sorted set, binary search, use prefix, but not used the function
 	v, _, err := vals.FindValidatorWithIndex(valAddr)
 	if err != nil {
 		return 0, err

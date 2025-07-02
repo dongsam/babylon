@@ -22,6 +22,7 @@ var (
 	EmptyProposalRes = abci.ResponsePrepareProposal{Txs: [][]byte{}}
 )
 
+// TODO: bottleneck review
 type ProposalHandler struct {
 	logger     log.Logger
 	ckptKeeper CheckpointingKeeper

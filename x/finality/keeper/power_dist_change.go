@@ -410,6 +410,7 @@ func (k Keeper) processPowerDistUpdateEventUnbond(
 	})
 }
 
+// TODO: bottleneck it could be transient store for in block cache
 func (k Keeper) SetVotingPowerDistCache(ctx context.Context, height uint64, dc *ftypes.VotingPowerDistCache) {
 	store := k.votingPowerDistCacheStore(ctx)
 	store.Set(sdk.Uint64ToBigEndian(height), k.cdc.MustMarshal(dc))

@@ -269,6 +269,7 @@ func (k Keeper) initializeFinalityProvider(ctx context.Context, fp sdk.AccAddres
 	return newFp, k.setFinalityProviderCurrentRewards(ctx, fp, newFp)
 }
 
+// TODO: pruning, ref count, compare with origin f1
 // initializeBTCDelegation creates a new BTCDelegationRewardsTracker from the
 // previous acumulative rewards period of the finality provider. This function
 // should be called right after a BTC delegator withdraw his rewards (in our

@@ -21,6 +21,7 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
 func EndBlocker(ctx context.Context, k keeper.Keeper) ([]abci.ValidatorUpdate, error) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
 
+	// TODO: bottleneck, constant active
 	// if the BTC staking protocol is activated, i.e., there exists a height where a finality provider
 	// has voting power, start indexing and tallying blocks
 	if k.IsFinalityActive(ctx) {
@@ -33,6 +34,7 @@ func EndBlocker(ctx context.Context, k keeper.Keeper) ([]abci.ValidatorUpdate, e
 		// to send votes on the height to be examined as whether `missed` or not (1 or 0 of a
 		// bit in a bit array of size params.SignedBlocksWindow)
 		// once this height is judged as `missed`, the judgement is irreversible
+		// TODO: bottleneck, duplicated get params
 		heightToExamine := sdk.UnwrapSDKContext(ctx).HeaderInfo().Height - k.GetParams(ctx).FinalitySigTimeout
 
 		if heightToExamine >= 1 {
