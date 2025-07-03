@@ -1,17 +1,23 @@
 package main
 
 import (
-	"cosmossdk.io/log"
 	"os"
+	"runtime/trace"
+
+	"cosmossdk.io/log"
+
+	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 
 	"github.com/babylonlabs-io/babylon/v2/app"
 	"github.com/babylonlabs-io/babylon/v2/cmd/babylond/cmd"
-	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 
 	"github.com/babylonlabs-io/babylon/v2/app/params"
 )
 
 func main() {
+	f, _ := os.Create("trace.out")
+	trace.Start(f)
+	defer trace.Stop()
 	params.SetAddressPrefixes()
 	rootCmd := cmd.NewRootCmd()
 
