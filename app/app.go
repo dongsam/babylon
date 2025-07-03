@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
@@ -95,6 +96,9 @@ import (
 	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/spf13/cast"
 
+	"github.com/strangelove-ventures/tokenfactory/x/tokenfactory"
+	tokenfactorytypes "github.com/strangelove-ventures/tokenfactory/x/tokenfactory/types"
+
 	"github.com/babylonlabs-io/babylon/v2/app/ante"
 	appkeepers "github.com/babylonlabs-io/babylon/v2/app/keepers"
 	appparams "github.com/babylonlabs-io/babylon/v2/app/params"
@@ -122,8 +126,6 @@ import (
 	minttypes "github.com/babylonlabs-io/babylon/v2/x/mint/types"
 	"github.com/babylonlabs-io/babylon/v2/x/monitor"
 	monitortypes "github.com/babylonlabs-io/babylon/v2/x/monitor/types"
-	"github.com/strangelove-ventures/tokenfactory/x/tokenfactory"
-	tokenfactorytypes "github.com/strangelove-ventures/tokenfactory/x/tokenfactory/types"
 )
 
 const (
@@ -660,11 +662,15 @@ func (app *BabylonApp) BeginBlockForks(ctx sdk.Context) {
 // BeginBlocker application updates every begin block
 func (app *BabylonApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 	app.BeginBlockForks(ctx)
+	ctx.Logger().Info("start BeginBlocker", "timestamp(unixnano)", time.Now().UnixNano())
+	defer ctx.Logger().Info("end BeginBlocker", "timestamp(unixnano)", time.Now().UnixNano())
 	return app.ModuleManager.BeginBlock(ctx)
 }
 
 // EndBlocker application updates every end block
 func (app *BabylonApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
+	ctx.Logger().Info("start EndBlocker", "timestamp(unixnano)", time.Now().UnixNano())
+	defer ctx.Logger().Info("end EndBlocker", "timestamp(unixnano)", time.Now().UnixNano())
 	return app.ModuleManager.EndBlock(ctx)
 }
 
