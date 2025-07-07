@@ -3,6 +3,7 @@ package keeper
 import (
 	"github.com/babylonlabs-io/babylon/v2/x/incentive/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"time"
 )
 
 var _ sdk.PostDecorator = &RefundTxDecorator{}
@@ -19,6 +20,7 @@ func NewRefundTxDecorator(k *Keeper) *RefundTxDecorator {
 }
 
 func (d *RefundTxDecorator) PostHandle(ctx sdk.Context, tx sdk.Tx, simulate, success bool, next sdk.PostHandler) (sdk.Context, error) {
+	ctx.Logger().Info("start PostHandle", "timestamp(unixnano)", time.Now().UnixNano())
 	// refund only when finalizing a block or simulating the current tx
 	if ctx.ExecMode() != sdk.ExecModeFinalize && !simulate {
 		return next(ctx, tx, simulate, success)
@@ -44,6 +46,7 @@ func (d *RefundTxDecorator) PostHandle(ctx sdk.Context, tx sdk.Tx, simulate, suc
 		}
 	}
 
+	ctx.Logger().Info("done PostHandle", "timestamp(unixnano)", time.Now().UnixNano())
 	// move to the next PostHandler
 	return next(ctx, tx, simulate, success)
 }

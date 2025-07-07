@@ -1,14 +1,6 @@
 package app
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
-
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"cosmossdk.io/client/v2/autocli"
@@ -22,6 +14,8 @@ import (
 	feegrantmodule "cosmossdk.io/x/feegrant/module"
 	"cosmossdk.io/x/upgrade"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	"encoding/json"
+	"fmt"
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
@@ -95,6 +89,10 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 	"github.com/spf13/cast"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/strangelove-ventures/tokenfactory/x/tokenfactory"
 	tokenfactorytypes "github.com/strangelove-ventures/tokenfactory/x/tokenfactory/types"
@@ -126,6 +124,7 @@ import (
 	minttypes "github.com/babylonlabs-io/babylon/v2/x/mint/types"
 	"github.com/babylonlabs-io/babylon/v2/x/monitor"
 	monitortypes "github.com/babylonlabs-io/babylon/v2/x/monitor/types"
+	"time"
 )
 
 const (
@@ -524,12 +523,14 @@ func NewBabylonApp(
 		if err != nil {
 			return res, err
 		}
+		ctx.Logger().Info("start ckptPreBlocker", "timestamp(unixnano)", time.Now().UnixNano())
 		// execute checkpointing module's PreBlocker
 		// NOTE: this does not change the consensus parameter in `res`
 		ckptPreBlocker := proposalHandler.PreBlocker()
 		if _, err := ckptPreBlocker(ctx, req); err != nil {
 			return res, err
 		}
+		ctx.Logger().Info("done ckptPreBlocker", "timestamp(unixnano)", time.Now().UnixNano())
 		return res, nil
 	})
 	app.SetBeginBlocker(app.BeginBlocker)
@@ -646,6 +647,8 @@ func (app *BabylonApp) Name() string { return app.BaseApp.Name() }
 
 // PreBlocker application updates every pre block
 func (app *BabylonApp) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+	ctx.Logger().Info("start PreBlocker", "timestamp(unixnano)", time.Now().UnixNano())
+	defer ctx.Logger().Info("done PreBlocker", "timestamp(unixnano)", time.Now().UnixNano())
 	return app.ModuleManager.PreBlock(ctx)
 }
 
@@ -662,15 +665,11 @@ func (app *BabylonApp) BeginBlockForks(ctx sdk.Context) {
 // BeginBlocker application updates every begin block
 func (app *BabylonApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 	app.BeginBlockForks(ctx)
-	ctx.Logger().Info("start BeginBlocker", "timestamp(unixnano)", time.Now().UnixNano())
-	defer ctx.Logger().Info("end BeginBlocker", "timestamp(unixnano)", time.Now().UnixNano())
 	return app.ModuleManager.BeginBlock(ctx)
 }
 
 // EndBlocker application updates every end block
 func (app *BabylonApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
-	ctx.Logger().Info("start EndBlocker", "timestamp(unixnano)", time.Now().UnixNano())
-	defer ctx.Logger().Info("end EndBlocker", "timestamp(unixnano)", time.Now().UnixNano())
 	return app.ModuleManager.EndBlock(ctx)
 }
 
