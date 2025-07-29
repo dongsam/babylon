@@ -3,6 +3,8 @@ package app
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -365,4 +367,170 @@ func SignetBtcHeaderGenesis(cdc codec.Codec) (*btclighttypes.BTCHeaderInfo, erro
 	}
 
 	return &btcHeaderGenesis, nil
+}
+
+// NewBabylonAppForIBCTesting initializes a new BabylonApp for IBC testing without requiring testing.T.
+// This is a simplified version of NewBabylonAppWithCustomOptions that can be used in init() functions.
+// Created Babylon application will have one validator with hardcoded amount of tokens.
+// Returns the app and the genesis state that includes the validator setup.
+func NewBabylonAppForIBCTesting(isCheckTx bool, blsSigner checkpointingtypes.BlsSigner, options SetupOptions) (*BabylonApp, GenesisState, error) {
+	// If no BLS signer provided, create a default one for testing
+	if blsSigner == nil {
+		tbs, err := signer.SetupTestBlsSigner()
+		if err != nil {
+			return nil, nil, err
+		}
+		blsSigner = checkpointingtypes.BlsSigner(tbs)
+	}
+	
+	// Set default options if not provided
+	if options.Logger == nil {
+		options.Logger = log.NewNopLogger()
+	}
+	if options.DB == nil {
+		options.DB = dbm.NewMemDB()
+	}
+	if options.AppOpts == nil {
+		nodeHome, err := os.MkdirTemp("", "babylon-test")
+		if err != nil {
+			return nil, nil, err
+		}
+		appOptions := make(simsutils.AppOptionsMap, 0)
+		appOptions[flags.FlagHome] = nodeHome
+		appOptions[server.FlagInvCheckPeriod] = uint(5)
+		appOptions["btc-config.network"] = string(bbn.BtcSimnet)
+		appOptions[server.FlagPruning] = pruningtypes.PruningOptionDefault
+		appOptions[server.FlagMempoolMaxTxs] = mempool.DefaultMaxTx
+		appOptions[flags.FlagChainID] = "chain-test"
+		options.AppOpts = appOptions
+	}
+	// create validator set with single validator
+	valKeys, err := appsigner.NewValidatorKeys(ed25519.GenPrivKey(), bls12381.GenPrivKey())
+	if err != nil {
+		return nil, nil, err
+	}
+	valPubkey, err := cryptocodec.FromCmtPubKeyInterface(valKeys.ValPubkey)
+	if err != nil {
+		return nil, nil, err
+	}
+	genesisKey, err := checkpointingtypes.NewGenesisKey(
+		sdk.ValAddress(valKeys.ValPubkey.Address()),
+		&valKeys.BlsPubkey,
+		valKeys.PoP,
+		&cosmosed.PubKey{Key: valPubkey.Bytes()},
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+	genesisValSet := []*checkpointingtypes.GenesisKey{genesisKey}
+
+	acc := authtypes.NewBaseAccount(valPubkey.Address().Bytes(), valPubkey, 0, 0)
+	balance := banktypes.Balance{
+		Address: acc.GetAddress().String(),
+		Coins:   sdk.NewCoins(sdk.NewCoin(appparams.DefaultBondDenom, math.NewInt(100000000000000))),
+	}
+
+	app := NewBabylonApp(
+		options.Logger,
+		options.DB,
+		nil,
+		true,
+		options.SkipUpgradeHeights,
+		options.InvCheckPeriod,
+		&blsSigner,
+		options.AppOpts,
+		appparams.EVMChainID,
+		EVMAppOptions,
+		EmptyWasmOpts,
+	)
+	genesisState := app.DefaultGenesis()
+	genesisState, err = genesisStateWithValSetNoTesting(app, genesisState, genesisValSet, []authtypes.GenesisAccount{acc}, balance)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Note: We don't call InitChain here as the IBC testing framework will handle that
+
+	return app, genesisState, nil
+}
+
+func genesisStateWithValSetNoTesting(
+	app *BabylonApp, genesisState GenesisState,
+	valSet []*checkpointingtypes.GenesisKey, genAccs []authtypes.GenesisAccount,
+	balances ...banktypes.Balance,
+) (GenesisState, error) {
+	// set genesis accounts
+	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
+	genesisState[authtypes.ModuleName] = app.AppCodec().MustMarshalJSON(authGenesis)
+
+	validators := make([]stakingtypes.Validator, 0, len(valSet))
+	delegations := make([]stakingtypes.Delegation, 0, len(valSet))
+
+	bondAmt := sdk.DefaultPowerReduction.MulRaw(1000)
+
+	for _, valGenKey := range valSet {
+		pkAny, err := codectypes.NewAnyWithValue(valGenKey.ValPubkey)
+		if err != nil {
+			return nil, err
+		}
+		validator := stakingtypes.Validator{
+			OperatorAddress:   valGenKey.ValidatorAddress,
+			ConsensusPubkey:   pkAny,
+			Jailed:            false,
+			Status:            stakingtypes.Bonded,
+			Tokens:            bondAmt,
+			DelegatorShares:   math.LegacyOneDec(),
+			Description:       stakingtypes.Description{},
+			UnbondingHeight:   int64(0),
+			UnbondingTime:     time.Unix(0, 0).UTC(),
+			Commission:        stakingtypes.NewCommission(math.LegacyZeroDec(), math.LegacyNewDec(100), math.LegacyNewDec(2)),
+			MinSelfDelegation: math.ZeroInt(),
+		}
+
+		validators = append(validators, validator)
+		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress().String(), valGenKey.ValidatorAddress, math.LegacyOneDec()))
+	}
+	// total bond amount = bond amount * number of validators
+	if len(validators) != len(delegations) {
+		return nil, fmt.Errorf("validators and delegations length mismatch")
+	}
+	totalBondAmt := bondAmt.MulRaw(int64(len(validators)))
+
+	// set validators and delegations
+	stakingGenesis := stakingtypes.NewGenesisState(stakingtypes.DefaultParams(), validators, delegations)
+	stakingGenesis.Params.BondDenom = appparams.DefaultBondDenom
+	genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(stakingGenesis)
+
+	checkpointingGenesis := &checkpointingtypes.GenesisState{
+		GenesisKeys: valSet,
+	}
+	genesisState[checkpointingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(checkpointingGenesis)
+
+	totalSupply := sdk.NewCoins()
+	for _, b := range balances {
+		// add genesis acc tokens to total supply
+		totalSupply = totalSupply.Add(b.Coins...)
+	}
+	for range delegations {
+		// add delegated tokens to total supply
+		totalSupply = totalSupply.Add(sdk.NewCoin(appparams.DefaultBondDenom, bondAmt))
+	}
+
+	// add bonded amount to bonded pool module account
+	balances = append(balances, banktypes.Balance{
+		Address: authtypes.NewModuleAddress(stakingtypes.BondedPoolName).String(),
+		Coins:   sdk.Coins{sdk.NewCoin(appparams.DefaultBondDenom, totalBondAmt)},
+	})
+
+	// update total supply
+	bankGenesis := banktypes.NewGenesisState(
+		banktypes.DefaultGenesisState().Params,
+		balances,
+		totalSupply,
+		[]banktypes.Metadata{},
+		[]banktypes.SendEnabled{},
+	)
+	genesisState[banktypes.ModuleName] = app.AppCodec().MustMarshalJSON(bankGenesis)
+
+	return genesisState, nil
 }

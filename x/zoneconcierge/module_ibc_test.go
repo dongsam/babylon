@@ -2,30 +2,18 @@ package zoneconcierge_test
 
 import (
 	"encoding/json"
-	"os"
 	"testing"
 	"time"
 
-	"cosmossdk.io/log"
 	"cosmossdk.io/math"
-	dbm "github.com/cosmos/cosmos-db"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/server"
-	simsutils "github.com/cosmos/cosmos-sdk/testutil/sims"
-	"github.com/cosmos/cosmos-sdk/types/mempool"
-	pruningtypes "cosmossdk.io/store/pruning/types"
-
-	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 
 	"github.com/babylonlabs-io/babylon/v3/app"
-	appparams "github.com/babylonlabs-io/babylon/v3/app/params"
-	"github.com/babylonlabs-io/babylon/v3/testutil/signer"
 	bsctypes "github.com/babylonlabs-io/babylon/v3/x/btcstkconsumer/types"
-	checkpointingtypes "github.com/babylonlabs-io/babylon/v3/x/checkpointing/types"
 	zctypes "github.com/babylonlabs-io/babylon/v3/x/zoneconcierge/types"
 )
 
@@ -36,46 +24,14 @@ func init() {
 }
 
 func setupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
-	// Create BLS signer
-	tbs, err := signer.SetupTestBlsSigner()
+	// Create the app using the same approach as the working version
+	// but return it without pre-initialization to let IBC testing framework handle it
+	babylonApp, genesisState, err := app.NewBabylonAppForIBCTesting(false, nil, app.SetupOptions{})
 	if err != nil {
 		panic(err)
 	}
-	blsSigner := checkpointingtypes.BlsSigner(tbs)
-
-	// Create app options
-	nodeHome, err := os.MkdirTemp("", "ibc-test")
-	if err != nil {
-		panic(err)
-	}
-
-	appOptions := make(simsutils.AppOptionsMap, 0)
-	appOptions[flags.FlagHome] = nodeHome
-	appOptions[server.FlagInvCheckPeriod] = uint(5)
-	appOptions["btc-config.network"] = "simnet"
-	appOptions[server.FlagPruning] = pruningtypes.PruningOptionDefault
-	appOptions[server.FlagMempoolMaxTxs] = mempool.DefaultMaxTx
-	appOptions[flags.FlagChainID] = "chain-test"
-	baseAppOpts := server.DefaultBaseappOptions(appOptions)
-
-	// Create app with proper configuration
-	db := dbm.NewMemDB()
-	babylonApp := app.NewBabylonApp(
-		log.NewNopLogger(),
-		db,
-		nil,
-		true,
-		map[int64]bool{},
-		5,
-		&blsSigner,
-		appOptions,
-		appparams.EVMChainID,
-		app.EVMAppOptions,
-		app.EmptyWasmOpts,
-		baseAppOpts...,
-	)
-
-	return babylonApp, babylonApp.DefaultGenesis()
+	
+	return babylonApp, genesisState
 }
 
 type IBCChannelCreationTestSuite struct {
