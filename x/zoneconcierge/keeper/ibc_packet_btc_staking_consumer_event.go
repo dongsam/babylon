@@ -6,14 +6,15 @@ import (
 	"fmt"
 	"sort"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+
 	bbn "github.com/babylonlabs-io/babylon/v3/types"
 	btclctypes "github.com/babylonlabs-io/babylon/v3/x/btclightclient/types"
 	bsctypes "github.com/babylonlabs-io/babylon/v3/x/btcstkconsumer/types"
 	finalitytypes "github.com/babylonlabs-io/babylon/v3/x/finality/types"
 	"github.com/babylonlabs-io/babylon/v3/x/zoneconcierge/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 )
 
 // BroadcastBTCStakingConsumerEvents retrieves all BTC staking consumer events from the event store,
@@ -99,6 +100,7 @@ func (k Keeper) BroadcastBTCStakingConsumerEvents(
 
 // HandleIBCChannelCreation processes the IBC handshake request. The handshake is successful
 // only if the client ID is registered as a consumer in the ZoneConcierge
+// It ensures only one open IBC channel exists per BSN at any given time
 func (k Keeper) HandleIBCChannelCreation(
 	ctx sdk.Context,
 	connectionID string,
@@ -123,9 +125,29 @@ func (k Keeper) HandleIBCChannelCreation(
 		return fmt.Errorf("consumer %s is not a Cosmos consumer", clientID)
 	}
 
-	// Ensure the client ID hasn't integrated yet, i.e., the channel ID is not set
+	// Check if there's already an open channel for this consumer
+	existingChannel, hasOpenChannel := k.getChannelForConsumer(ctx, clientID)
+	if hasOpenChannel {
+		// Terminate handshake if an open channel already exists
+		return fmt.Errorf("consumer %s already has an open IBC channel %s, terminating handshake for new channel %s",
+			clientID, existingChannel.ChannelId, channelID)
+	}
+
+	// Check if there's a channel ID in metadata but it's closed
 	if len(cosmosMetadata.ChannelId) > 0 {
-		return fmt.Errorf("consumer %s has already integrated with channel %s", clientID, cosmosMetadata.ChannelId)
+		// Check if the existing channel is actually closed
+		existingChannelState, found := k.channelKeeper.GetChannel(ctx, k.GetPort(ctx), cosmosMetadata.ChannelId)
+		if found && existingChannelState.State == channeltypes.CLOSED {
+			k.Logger(ctx).Info("replacing closed channel with new one",
+				"consumerID", clientID,
+				"oldChannelID", cosmosMetadata.ChannelId,
+				"newChannelID", channelID,
+			)
+		} else if found && existingChannelState.State == channeltypes.OPEN {
+			// This should not happen due to the check above, but added as safety
+			return fmt.Errorf("consumer %s has an open channel %s, cannot create new channel %s",
+				clientID, cosmosMetadata.ChannelId, channelID)
+		}
 	}
 
 	// all good, update the channel ID in the consumer register
