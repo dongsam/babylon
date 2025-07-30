@@ -78,6 +78,16 @@ func TestBabylonCheckRemovedStakingEndBlocker(t *testing.T) {
 			t.Error("the staking module is active to execute end blocker")
 		}
 	}
+	res, err := app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		//Height:             0,
+		//Time:               time.Time{},
+		//NextValidatorsHash: nil,
+		//ProposerAddress:    nil,
+	})
+	//app.BeginBlocker(ctx)
+	fmt.Println(res, err)
+	res2, err := app.Commit()
+	fmt.Println(res2, err)
 }
 
 func TestBabylonBlockedAddrs(t *testing.T) {
