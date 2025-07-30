@@ -1,7 +1,6 @@
 package zoneconcierge_test
 
 import (
-	"encoding/json"
 	"testing"
 	"time"
 
@@ -17,22 +16,22 @@ import (
 	zctypes "github.com/babylonlabs-io/babylon/v3/x/zoneconcierge/types"
 )
 
-func init() {
-	ibctesting.DefaultTestingAppInit = func() (ibctesting.TestingApp, map[string]json.RawMessage) {
-		return setupTestingApp()
-	}
-}
+//func init() {
+//	ibctesting.DefaultTestingAppInit = func() (ibctesting.TestingApp, map[string]json.RawMessage) {
+//		return setupTestingApp()
+//	}
+//}
 
-func setupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
-	// Create the app using the same approach as the working version
-	// but return it without pre-initialization to let IBC testing framework handle it
-	babylonApp, genesisState, err := app.NewBabylonAppForIBCTesting(false, nil, app.SetupOptions{})
-	if err != nil {
-		panic(err)
-	}
-	
-	return babylonApp, genesisState
-}
+//func setupTestingApp() (ibctesting.TestingApp, map[string]json.RawMessage) {
+//	// Create the app using the same approach as the working version
+//	// but return it without pre-initialization to let IBC testing framework handle it
+//	babylonApp, genesisState, err := app.NewBabylonAppForIBCTesting(false)
+//	if err != nil {
+//		panic(err)
+//	}
+//
+//	return babylonApp, genesisState
+//}
 
 type IBCChannelCreationTestSuite struct {
 	suite.Suite
@@ -48,7 +47,60 @@ func TestIBCChannelCreationTestSuite(t *testing.T) {
 }
 
 func (suite *IBCChannelCreationTestSuite) SetupTest() {
-	suite.coordinator = ibctesting.NewCoordinator(suite.T(), 2)
+	//suite.coordinator = ibctesting.NewCoordinator(suite.T(), 1)
+	//suite.coordinator.Chains = make(map[string]*ibctesting.TestChain)
+
+	tb := suite.T()
+	//tb.Helper()
+
+	chains := make(map[string]*ibctesting.TestChain)
+	coord := &ibctesting.Coordinator{
+		T:           tb,
+		CurrentTime: time.Date(2020, 1, 2, 0, 0, 0, 0, time.UTC),
+	}
+	coord.Chains = chains
+	suite.coordinator = coord
+
+	app.NewBabylonAppForIBCTesting(tb, false, suite.coordinator, 1)
+	app.NewBabylonAppForIBCTesting(tb, false, suite.coordinator, 2)
+
+	//// -----
+	////chainId := ibctesting.GetChainID(1)
+	//_, _, testChain, err := app.NewBabylonAppForIBCTesting(false)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//// create current header and call begin block
+	//header := cmtproto.Header{
+	//	ChainID: chainId,
+	//	Height:  1,
+	//	Time:    suite.coordinator.CurrentTime.UTC(),
+	//}
+	//testChain.TB = tb
+	//testChain.Coordinator = suite.coordinator
+	//testChain.ChainID = chainId
+	//testChain.ProposedHeader = header
+	//suite.coordinator.Chains[chainId] = testChain
+	//
+	//// -----
+	//chainId2 := ibctesting.GetChainID(2)
+	//_, _, testChain2, err := app.NewBabylonAppForIBCTesting(false)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//// create current header and call begin block
+	//header2 := cmtproto.Header{
+	//	ChainID: chainId2,
+	//	Height:  1,
+	//	Time:    suite.coordinator.CurrentTime.UTC(),
+	//}
+	//testChain2.TB = tb
+	//testChain2.Coordinator = suite.coordinator
+	//testChain2.ChainID = chainId2
+	//testChain2.ProposedHeader = header2
+	//suite.coordinator.Chains[chainId2] = testChain2
+
+	//suite.coordinator = ibctesting.NewCustomAppCoordinator(suite.T(), 1, setupTestingApp)
 
 	// Setup Babylon chain (chainA) and Consumer chain (chainB)
 	suite.chainA = suite.coordinator.GetChain(ibctesting.GetChainID(1))

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -40,6 +39,9 @@ import (
 	bbn "github.com/babylonlabs-io/babylon/v3/types"
 	btclighttypes "github.com/babylonlabs-io/babylon/v3/x/btclightclient/types"
 	checkpointingtypes "github.com/babylonlabs-io/babylon/v3/x/checkpointing/types"
+	cmttypes "github.com/cometbft/cometbft/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 )
 
 // SetupOptions defines arguments that are passed into `Simapp` constructor.
@@ -373,46 +375,59 @@ func SignetBtcHeaderGenesis(cdc codec.Codec) (*btclighttypes.BTCHeaderInfo, erro
 // This is a simplified version of NewBabylonAppWithCustomOptions that can be used in init() functions.
 // Created Babylon application will have one validator with hardcoded amount of tokens.
 // Returns the app and the genesis state that includes the validator setup.
-func NewBabylonAppForIBCTesting(isCheckTx bool, blsSigner checkpointingtypes.BlsSigner, options SetupOptions) (*BabylonApp, GenesisState, error) {
-	// If no BLS signer provided, create a default one for testing
-	if blsSigner == nil {
-		tbs, err := signer.SetupTestBlsSigner()
-		if err != nil {
-			return nil, nil, err
-		}
-		blsSigner = checkpointingtypes.BlsSigner(tbs)
-	}
-	
-	// Set default options if not provided
-	if options.Logger == nil {
-		options.Logger = log.NewNopLogger()
-	}
-	if options.DB == nil {
-		options.DB = dbm.NewMemDB()
-	}
-	if options.AppOpts == nil {
-		nodeHome, err := os.MkdirTemp("", "babylon-test")
-		if err != nil {
-			return nil, nil, err
-		}
-		appOptions := make(simsutils.AppOptionsMap, 0)
-		appOptions[flags.FlagHome] = nodeHome
-		appOptions[server.FlagInvCheckPeriod] = uint(5)
-		appOptions["btc-config.network"] = string(bbn.BtcSimnet)
-		appOptions[server.FlagPruning] = pruningtypes.PruningOptionDefault
-		appOptions[server.FlagMempoolMaxTxs] = mempool.DefaultMaxTx
-		appOptions[flags.FlagChainID] = "chain-test"
-		options.AppOpts = appOptions
-	}
-	// create validator set with single validator
-	valKeys, err := appsigner.NewValidatorKeys(ed25519.GenPrivKey(), bls12381.GenPrivKey())
+func NewBabylonAppForIBCTesting(tb *testing.T, isCheckTx bool, coordinator *ibctesting.Coordinator, index int) (*BabylonApp, GenesisState, *ibctesting.TestChain, error) {
+	tb.Helper()
+	var options SetupOptions
+	// create a default one for testing
+	options.DB = dbm.NewMemDB()
+
+	tbs, err := signer.SetupTestBlsSigner()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
+	}
+	blsSigner := checkpointingtypes.BlsSigner(tbs)
+
+	options.Logger = log.NewNopLogger()
+	appOptions, cleanup := TmpAppOptions()
+	defer cleanup()
+
+	options.AppOpts = appOptions
+
+	//if options.AppOpts == nil {
+	//	nodeHome, err := os.MkdirTemp("", "babylon-test")
+	//	if err != nil {
+	//		return nil, nil, err
+	//	}
+	//	appOptions := make(simsutils.AppOptionsMap, 0)
+	//	appOptions[flags.FlagHome] = nodeHome
+	//	appOptions[server.FlagInvCheckPeriod] = uint(5)
+	//	appOptions["btc-config.network"] = string(bbn.BtcSimnet)
+	//	appOptions[server.FlagPruning] = pruningtypes.PruningOptionDefault
+	//	appOptions[server.FlagMempoolMaxTxs] = mempool.DefaultMaxTx
+	//	appOptions[flags.FlagChainID] = "chain-test"
+	//	options.AppOpts = appOptions
+	//}
+
+	// create validator set with single validator
+	//valPriv := ed25519.GenPrivKey()
+	mockPv := cmttypes.NewMockPV()
+	blsPriv := bls12381.GenPrivKey()
+	valKeys, err := appsigner.NewValidatorKeys(mockPv.PrivKey, blsPriv)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 	valPubkey, err := cryptocodec.FromCmtPubKeyInterface(valKeys.ValPubkey)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
+
+	var validators []*cmttypes.Validator
+	var signersByAddress = make(map[string]cmttypes.PrivValidator, 1)
+	senderAccs := []ibctesting.SenderAccount{}
+	validators = append(validators, cmttypes.NewValidator(valKeys.ValPubkey, 1000))
+	signersByAddress[valPubkey.Address().String()] = mockPv
+	valSet := cmttypes.NewValidatorSet(validators)
+
 	genesisKey, err := checkpointingtypes.NewGenesisKey(
 		sdk.ValAddress(valKeys.ValPubkey.Address()),
 		&valKeys.BlsPubkey,
@@ -420,11 +435,19 @@ func NewBabylonAppForIBCTesting(isCheckTx bool, blsSigner checkpointingtypes.Bls
 		&cosmosed.PubKey{Key: valPubkey.Bytes()},
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	genesisValSet := []*checkpointingtypes.GenesisKey{genesisKey}
 
-	acc := authtypes.NewBaseAccount(valPubkey.Address().Bytes(), valPubkey, 0, 0)
+	senderPrivKey := secp256k1.GenPrivKey()
+	acc := authtypes.NewBaseAccount(senderPrivKey.PubKey().Address().Bytes(), senderPrivKey.PubKey(), uint64(0), 0)
+	senderAcc := ibctesting.SenderAccount{
+		SenderAccount: acc,
+		SenderPrivKey: senderPrivKey,
+	}
+	senderAccs = append(senderAccs, senderAcc)
+
+	//acc := authtypes.NewBaseAccount(valPubkey.Address().Bytes(), valPubkey, 0, 0)
 	balance := banktypes.Balance{
 		Address: acc.GetAddress().String(),
 		Coins:   sdk.NewCoins(sdk.NewCoin(appparams.DefaultBondDenom, math.NewInt(100000000000000))),
@@ -446,12 +469,65 @@ func NewBabylonAppForIBCTesting(isCheckTx bool, blsSigner checkpointingtypes.Bls
 	genesisState := app.DefaultGenesis()
 	genesisState, err = genesisStateWithValSetNoTesting(app, genesisState, genesisValSet, []authtypes.GenesisAccount{acc}, balance)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	// Note: We don't call InitChain here as the IBC testing framework will handle that
+	if !isCheckTx {
+		// init chain must be called to stop deliverState from being nil
+		stateBytes, _ := tmjson.MarshalIndent(genesisState, "", " ")
 
-	return app, genesisState, nil
+		// Initialize the chain
+		consensusParams := simsutils.DefaultConsensusParams
+		initialHeight := app.LastBlockHeight() + 1
+		consensusParams.Abci = &cmtproto.ABCIParams{VoteExtensionsEnableHeight: initialHeight}
+		_, _ = app.InitChain(
+			&abci.RequestInitChain{
+				Validators:      []abci.ValidatorUpdate{},
+				ConsensusParams: consensusParams,
+				AppStateBytes:   stateBytes,
+				InitialHeight:   initialHeight,
+			},
+		)
+	}
+
+	// create current header and call begin block
+	chainId := ibctesting.GetChainID(index)
+	header := cmtproto.Header{
+		ChainID: chainId,
+		Height:  1,
+		Time:    coordinator.CurrentTime.UTC(),
+	}
+
+	// init chain will set the validator set and initialize the genesis accounts
+	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
+	_, err = app.InitChain(
+		&abci.RequestInitChain{
+			ChainId:         chainId,
+			Validators:      []abci.ValidatorUpdate{},
+			AppStateBytes:   stateBytes,
+			ConsensusParams: simsutils.DefaultConsensusParams,
+		},
+	)
+
+	chain := &ibctesting.TestChain{
+		TB:                tb,
+		Coordinator:       coordinator,
+		ChainID:           chainId,
+		App:               app,
+		ProposedHeader:    header,
+		TxConfig:          app.GetTxConfig(),
+		Codec:             app.AppCodec(),
+		Vals:              valSet,
+		NextVals:          valSet,
+		Signers:           signersByAddress,
+		TrustedValidators: make(map[uint64]*cmttypes.ValidatorSet, 0),
+		SenderPrivKey:     senderAccs[0].SenderPrivKey,
+		SenderAccount:     senderAccs[0].SenderAccount,
+		SenderAccounts:    senderAccs,
+	}
+	coordinator.Chains[chainId] = chain
+
+	return app, genesisState, chain, nil
 }
 
 func genesisStateWithValSetNoTesting(
