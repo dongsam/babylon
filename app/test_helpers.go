@@ -391,25 +391,18 @@ func NewBabylonAppForIBCTesting(tb *testing.T, isCheckTx bool, coordinator *ibct
 	appOptions, cleanup := TmpAppOptions()
 	defer cleanup()
 
+	chainId := ibctesting.GetChainID(index)
+	nodeHome := tb.TempDir()
+	appOptions[flags.FlagHome] = nodeHome // ensure unique folder
+	appOptions[server.FlagInvCheckPeriod] = 5
+	appOptions["btc-config.network"] = string(bbn.BtcSimnet)
+	appOptions[server.FlagPruning] = pruningtypes.PruningOptionDefault
+	appOptions[server.FlagMempoolMaxTxs] = mempool.DefaultMaxTx
+	appOptions[flags.FlagChainID] = chainId
+	baseAppOpts := server.DefaultBaseappOptions(appOptions)
 	options.AppOpts = appOptions
 
-	//if options.AppOpts == nil {
-	//	nodeHome, err := os.MkdirTemp("", "babylon-test")
-	//	if err != nil {
-	//		return nil, nil, err
-	//	}
-	//	appOptions := make(simsutils.AppOptionsMap, 0)
-	//	appOptions[flags.FlagHome] = nodeHome
-	//	appOptions[server.FlagInvCheckPeriod] = uint(5)
-	//	appOptions["btc-config.network"] = string(bbn.BtcSimnet)
-	//	appOptions[server.FlagPruning] = pruningtypes.PruningOptionDefault
-	//	appOptions[server.FlagMempoolMaxTxs] = mempool.DefaultMaxTx
-	//	appOptions[flags.FlagChainID] = "chain-test"
-	//	options.AppOpts = appOptions
-	//}
-
 	// create validator set with single validator
-	//valPriv := ed25519.GenPrivKey()
 	mockPv := cmttypes.NewMockPV()
 	blsPriv := bls12381.GenPrivKey()
 	valKeys, err := appsigner.NewValidatorKeys(mockPv.PrivKey, blsPriv)
@@ -465,6 +458,7 @@ func NewBabylonAppForIBCTesting(tb *testing.T, isCheckTx bool, coordinator *ibct
 		appparams.EVMChainID,
 		EVMAppOptions,
 		EmptyWasmOpts,
+		baseAppOpts...,
 	)
 	genesisState := app.DefaultGenesis()
 	genesisState, err = genesisStateWithValSetNoTesting(app, genesisState, genesisValSet, []authtypes.GenesisAccount{acc}, balance)
@@ -472,42 +466,51 @@ func NewBabylonAppForIBCTesting(tb *testing.T, isCheckTx bool, coordinator *ibct
 		return nil, nil, nil, err
 	}
 
-	if !isCheckTx {
-		// init chain must be called to stop deliverState from being nil
-		stateBytes, _ := tmjson.MarshalIndent(genesisState, "", " ")
+	// Chain initialization will be handled later to avoid double initialization
 
-		// Initialize the chain
-		consensusParams := simsutils.DefaultConsensusParams
-		initialHeight := app.LastBlockHeight() + 1
-		consensusParams.Abci = &cmtproto.ABCIParams{VoteExtensionsEnableHeight: initialHeight}
-		_, _ = app.InitChain(
-			&abci.RequestInitChain{
-				Validators:      []abci.ValidatorUpdate{},
-				ConsensusParams: consensusParams,
-				AppStateBytes:   stateBytes,
-				InitialHeight:   initialHeight,
-			},
-		)
-	}
+	//// init chain will set the validator set and initialize the genesis accounts
+	//_, err = app.InitChain(
+	//	&abci.RequestInitChain{
+	//		ChainId:         chainId,
+	//		Validators:      []abci.ValidatorUpdate{},
+	//		AppStateBytes:   stateBytes,
+	//		ConsensusParams: simsutils.DefaultConsensusParams,
+	//	},
+	//)
+	//if err != nil {
+	//	panic(err)
+	//}
 
 	// create current header and call begin block
-	chainId := ibctesting.GetChainID(index)
 	header := cmtproto.Header{
 		ChainID: chainId,
 		Height:  1,
 		Time:    coordinator.CurrentTime.UTC(),
 	}
-
-	// init chain will set the validator set and initialize the genesis accounts
 	stateBytes, err := json.MarshalIndent(genesisState, "", " ")
-	_, err = app.InitChain(
-		&abci.RequestInitChain{
-			ChainId:         chainId,
-			Validators:      []abci.ValidatorUpdate{},
-			AppStateBytes:   stateBytes,
-			ConsensusParams: simsutils.DefaultConsensusParams,
-		},
-	)
+	consensusParams := simsutils.DefaultConsensusParams
+	consensusParams.Block.MaxGas = 100 * simsutils.DefaultGenTxGas
+	// it is required that the VoteExtensionsEnableHeight > 0 to enable vote extension
+	initialHeight := app.LastBlockHeight() + 1
+	consensusParams.Abci = &cmtproto.ABCIParams{VoteExtensionsEnableHeight: initialHeight}
+	_, err = app.InitChain(&abci.RequestInitChain{
+		ChainId:         chainId,
+		Time:            coordinator.CurrentTime.UTC(),
+		Validators:      []abci.ValidatorUpdate{},
+		ConsensusParams: consensusParams,
+		InitialHeight:   1,
+		AppStateBytes:   stateBytes,
+	})
+	require.NoError(tb, err)
+
+	//_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+	//	Height: initialHeight,
+	//	Hash:   app.LastCommitID().Hash,
+	//})
+	//require.NoError(tb, err)
+
+	// Create chain without initializing - let IBC testing framework handle initialization
+	// The IBC testing framework will call InitChain with proper chain ID
 
 	chain := &ibctesting.TestChain{
 		TB:                tb,

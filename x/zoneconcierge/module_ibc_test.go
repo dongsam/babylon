@@ -61,50 +61,19 @@ func (suite *IBCChannelCreationTestSuite) SetupTest() {
 	coord.Chains = chains
 	suite.coordinator = coord
 
-	app.NewBabylonAppForIBCTesting(tb, false, suite.coordinator, 1)
-	app.NewBabylonAppForIBCTesting(tb, false, suite.coordinator, 2)
-
-	//// -----
-	////chainId := ibctesting.GetChainID(1)
-	//_, _, testChain, err := app.NewBabylonAppForIBCTesting(false)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//// create current header and call begin block
-	//header := cmtproto.Header{
-	//	ChainID: chainId,
-	//	Height:  1,
-	//	Time:    suite.coordinator.CurrentTime.UTC(),
-	//}
-	//testChain.TB = tb
-	//testChain.Coordinator = suite.coordinator
-	//testChain.ChainID = chainId
-	//testChain.ProposedHeader = header
-	//suite.coordinator.Chains[chainId] = testChain
-	//
-	//// -----
-	//chainId2 := ibctesting.GetChainID(2)
-	//_, _, testChain2, err := app.NewBabylonAppForIBCTesting(false)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//// create current header and call begin block
-	//header2 := cmtproto.Header{
-	//	ChainID: chainId2,
-	//	Height:  1,
-	//	Time:    suite.coordinator.CurrentTime.UTC(),
-	//}
-	//testChain2.TB = tb
-	//testChain2.Coordinator = suite.coordinator
-	//testChain2.ChainID = chainId2
-	//testChain2.ProposedHeader = header2
-	//suite.coordinator.Chains[chainId2] = testChain2
-
-	//suite.coordinator = ibctesting.NewCustomAppCoordinator(suite.T(), 1, setupTestingApp)
+	// TODO: setup epoch
+	_, _, chainA, err := app.NewBabylonAppForIBCTesting(tb, false, suite.coordinator, 1)
+	if err != nil {
+		panic(err)
+	}
+	_, _, chainB, err := app.NewBabylonAppForIBCTesting(tb, false, suite.coordinator, 2)
+	if err != nil {
+		panic(err)
+	}
 
 	// Setup Babylon chain (chainA) and Consumer chain (chainB)
-	suite.chainA = suite.coordinator.GetChain(ibctesting.GetChainID(1))
-	suite.chainB = suite.coordinator.GetChain(ibctesting.GetChainID(2))
+	suite.chainA = chainA
+	suite.chainB = chainB
 
 	// Create IBC path between the chains
 	suite.path = ibctesting.NewPath(suite.chainA, suite.chainB)
