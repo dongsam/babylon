@@ -114,6 +114,7 @@ func (k Keeper) createBTCTimestamp(
 		Proof: &types.ProofFinalizedHeader{
 			ProofEpochSealed:    finalizedInfo.ProofEpochSealed,
 			ProofEpochSubmitted: finalizedInfo.ProofEpochSubmitted,
+			// ProofEpochInfo:       nil, // will be set later
 		},
 	}
 

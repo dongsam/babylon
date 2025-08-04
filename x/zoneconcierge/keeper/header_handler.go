@@ -18,6 +18,8 @@ func (k Keeper) HandleHeaderWithValidCommit(ctx context.Context, txHash []byte, 
 			"consumer_id", header.ClientId,
 			"height", header.Height,
 		)
+		// TODO: nil error here is not ideal, consider returning an error or logging
+		panic("TODO: nil error here is not ideal, consider returning an error or logging")
 		return
 	}
 

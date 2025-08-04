@@ -4,9 +4,9 @@
       "@type": "/babylon.finality.v1.MsgResumeFinalityProposal",
       "authority": "bbn10d07y265gmmuvt4z0w9aw880jnsr700jduz5f2",
       "fp_pks_hex": [
-        "dd5f58d342aee47f277069c3789595c52d769855d5361c88e05c1fc941f793b1"
+        "c78a5519dda773038072632af63bce71841ac05b4318e0474839ad9d9c93a909"
       ],
-      "halting_height": 55
+      "halting_height": 57
     }
   ],
   "metadata": "",

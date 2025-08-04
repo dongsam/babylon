@@ -92,17 +92,20 @@ func (k Keeper) recordEpochHeaders(ctx context.Context, epochNumber uint64) {
 // recordEpochHeadersProofs records the proofs for headers of a given epoch
 func (k Keeper) recordEpochHeadersProofs(ctx context.Context, epochNumber uint64) {
 	curEpoch := k.GetEpoch(ctx)
+	fmt.Println("@@@@@@@", curEpoch.EpochNumber, epochNumber)
 
 	// Get all finalized headers for this epoch
 	err := k.FinalizedEpochHeaders.Walk(ctx, nil, func(key collections.Pair[uint64, string], headerWithProof types.IndexedHeaderWithProof) (bool, error) {
 		keyEpochNumber := key.K1()
 		consumerID := key.K2()
 
+		// TODO: use ranger for prefix matching
 		if keyEpochNumber != epochNumber {
 			return false, nil
 		}
 
 		// Only generate proof if the header is from the current epoch
+		// TODO: verify for epochNumber
 		if headerWithProof.Header.BabylonEpoch == curEpoch.EpochNumber {
 			// Generate proof that the header is committed to the epoch
 			proof, err := k.ProveConsumerHeaderInEpoch(ctx, headerWithProof.Header, curEpoch)
