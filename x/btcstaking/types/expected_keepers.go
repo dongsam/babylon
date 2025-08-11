@@ -24,12 +24,13 @@ type FinalityKeeper interface {
 	HasTimestampedPubRand(ctx context.Context, fpBtcPK *bbn.BIP340PubKey, height uint64) bool
 }
 
+// TODO: fix interface
 type BTCStkConsumerKeeper interface {
 	IsConsumerRegistered(ctx context.Context, consumerID string) bool
 	IsCosmosConsumer(ctx context.Context, consumerID string) (bool, error)
 	GetConsumerRegister(ctx context.Context, consumerID string) (*btcstkconsumertypes.ConsumerRegister, error)
 	GetConsumerID(ctx sdk.Context, portID, channelID string) (consumerID string, err error)
-	ConsumerHasIBCChannelOpen(ctx context.Context, consumerID string) bool
+	ConsumerHasIBCChannelOpen(ctx context.Context, consumerID, channelID string) bool
 }
 
 type IncentiveKeeper interface {
