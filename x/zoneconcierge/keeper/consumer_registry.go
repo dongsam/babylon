@@ -18,12 +18,14 @@ func (k Keeper) HasConsumer(ctx context.Context, consumerID string) bool {
 	return isCosmosConsumer
 }
 
+// TODO: refactor to return consumers
 // GetAllConsumerIDs returns all registered Cosmos consumer IDs
 func (k Keeper) GetAllConsumerIDs(ctx context.Context) []string {
 	allConsumerIDs := k.btcStkKeeper.GetAllRegisteredConsumerIDs(ctx)
 
 	var cosmosConsumerIDs []string
 	for _, consumerID := range allConsumerIDs {
+		// TODO: refactor reuse all Consumers
 		isCosmosConsumer, err := k.btcStkKeeper.IsCosmosConsumer(ctx, consumerID)
 		if err != nil {
 			continue

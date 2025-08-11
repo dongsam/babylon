@@ -50,6 +50,7 @@ type ChannelKeeper interface {
 	GetChannel(ctx sdk.Context, srcPort, srcChan string) (channel channeltypes.Channel, found bool)
 	GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool)
 	GetAllChannels(ctx sdk.Context) (channels []channeltypes.IdentifiedChannel)
+	GetAllChannelsWithPortPrefix(ctx sdk.Context, portPrefix string) []channeltypes.IdentifiedChannel
 	GetChannelClientState(ctx sdk.Context, portID, channelID string) (string, ibcexported.ClientState, error)
 }
 
@@ -112,5 +113,6 @@ type BTCStkConsumerKeeper interface {
 	GetConsumerRegister(ctx context.Context, consumerID string) (*btcstkconsumertypes.ConsumerRegister, error)
 	IsConsumerRegistered(ctx context.Context, consumerID string) bool
 	GetAllRegisteredConsumerIDs(ctx context.Context) []string
+	GetAllRegisteredCosmosConsumers(ctx context.Context) []*btcstkconsumertypes.ConsumerRegister
 	IsCosmosConsumer(ctx context.Context, consumerID string) (bool, error)
 }

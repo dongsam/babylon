@@ -128,6 +128,7 @@ func (k Keeper) HandleIBCChannelCreation(
 	}
 
 	// all good, update the channel ID in the consumer register
+	// TODO: check the channel ID is set correctly
 	cosmosMetadata.ChannelId = channelID
 	consumerRegister.ConsumerMetadata = &bsctypes.ConsumerRegister_CosmosConsumerMetadata{
 		CosmosConsumerMetadata: cosmosMetadata,
