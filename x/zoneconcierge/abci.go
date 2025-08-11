@@ -23,6 +23,7 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
 func EndBlocker(ctx context.Context, k keeper.Keeper) ([]abci.ValidatorUpdate, error) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
 
+	// TODO: when error, need to keep on state or retry?
 	// Handle BTC headers broadcast with structured error handling
 	if err := k.BroadcastBTCHeaders(ctx); err != nil {
 		handleBroadcastError(ctx, k, "BroadcastBTCHeaders", err)
@@ -41,6 +42,7 @@ func EndBlocker(ctx context.Context, k keeper.Keeper) ([]abci.ValidatorUpdate, e
 func handleBroadcastError(ctx context.Context, k keeper.Keeper, operation string, err error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
+	// TODO: add frozen case
 	if errors.Is(err, clienttypes.ErrClientNotActive) {
 		k.Logger(sdkCtx).Info("IBC client is not active, skipping broadcast",
 			"operation", operation,

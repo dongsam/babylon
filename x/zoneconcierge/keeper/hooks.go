@@ -38,6 +38,7 @@ func (h Hooks) AfterRawCheckpointSealed(ctx context.Context, epoch uint64) error
 func (h Hooks) AfterRawCheckpointFinalized(ctx context.Context, epoch uint64) error {
 	// send BTC timestamp to all open channels with ZoneConcierge along side with
 	// necessary light client headers
+	// TODO: error handling with keep fail packets
 	if err := h.k.BroadcastBTCTimestamps(ctx, epoch); err != nil {
 		h.handleHookBroadcastError(ctx, "BroadcastBTCTimestamps", err)
 	}
@@ -45,6 +46,7 @@ func (h Hooks) AfterRawCheckpointFinalized(ctx context.Context, epoch uint64) er
 	return nil
 }
 
+// TODO: refactor, re-use the same logic as in EndBlocker
 // handleHookBroadcastError provides structured error handling for IBC broadcast operations in hooks
 func (h Hooks) handleHookBroadcastError(ctx context.Context, operation string, err error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
