@@ -175,6 +175,7 @@ func (s headersState) IterateForwardHeaders(startPoint uint32, fn func(*types.BT
 	iter := s.headers.Iterator(startKey, nil)
 	defer iter.Close()
 
+	// TODO: caching with key
 	for ; iter.Valid(); iter.Next() {
 		header := headerInfoFromStoredBytes(s.cdc, iter.Value())
 		stop := fn(header)

@@ -256,6 +256,7 @@ func (k Keeper) GetMainChainFrom(ctx context.Context, startHeight uint32) []*typ
 		headers = append(headers, header)
 		return false
 	}
+	// TODO: caching
 	k.headersState(ctx).IterateForwardHeaders(startHeight, accHeaderFn)
 	return headers
 }
