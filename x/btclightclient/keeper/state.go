@@ -8,10 +8,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/runtime"
 
 	"cosmossdk.io/store/prefix"
-	bbn "github.com/babylonlabs-io/babylon/v3/types"
-	"github.com/babylonlabs-io/babylon/v3/x/btclightclient/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	bbn "github.com/babylonlabs-io/babylon/v3/types"
+	"github.com/babylonlabs-io/babylon/v3/x/btclightclient/types"
 )
 
 type headersState struct {
@@ -175,6 +176,7 @@ func (s headersState) IterateForwardHeaders(startPoint uint32, fn func(*types.BT
 	iter := s.headers.Iterator(startKey, nil)
 	defer iter.Close()
 
+	// TODO: caching with key
 	for ; iter.Valid(); iter.Next() {
 		header := headerInfoFromStoredBytes(s.cdc, iter.Value())
 		stop := fn(header)

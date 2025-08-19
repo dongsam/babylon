@@ -154,6 +154,7 @@ func (k Keeper) getDeepEnoughBTCHeaders(ctx context.Context) []*btclctypes.BTCHe
 // If a consumer ID is not provided, a global LastSentSegment is used to track the timestamped header
 // for all consumers when the checkpoint is finalized.
 func (k Keeper) GetHeadersToBroadcast(ctx context.Context, consumerID string, headerCache *types.HeaderCache) []*btclctypes.BTCHeaderInfo {
+	// TODO: set only hash or height?
 	lastSegment := k.GetBSNLastSentSegment(ctx, consumerID)
 
 	if lastSegment == nil {
@@ -170,6 +171,7 @@ func (k Keeper) GetHeadersToBroadcast(ctx context.Context, consumerID string, he
 	var initHeader *btclctypes.BTCHeaderInfo
 	for i := len(lastSegment.BtcHeaders) - 1; i >= 0; i-- {
 		header := lastSegment.BtcHeaders[i]
+		// TODO: do we need to check exist?
 		if header, err := headerCache.GetHeaderByHash(
 			header.Hash,
 			func() (*btclctypes.BTCHeaderInfo, error) {
@@ -185,9 +187,11 @@ func (k Keeper) GetHeadersToBroadcast(ctx context.Context, consumerID string, he
 		// if initHeader is nil, then this means a reorg happens such that all headers
 		// in the last segment are reverted. In this case, send the last k+1 BTC headers
 		// using confirmation depth k instead of finalization timeout w for efficiency
+		// TODO: caching for the endblock
 		return k.getDeepEnoughBTCHeaders(ctx)
 	}
 
+	// TODO: caching
 	headersToSend := k.btclcKeeper.GetMainChainFrom(ctx, initHeader.Height+1)
 
 	return headersToSend

@@ -7,14 +7,16 @@ import (
 	corestoretypes "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 
-	bbn "github.com/babylonlabs-io/babylon/v3/types"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/wire"
 
-	"github.com/babylonlabs-io/babylon/v3/x/btclightclient/types"
+	bbn "github.com/babylonlabs-io/babylon/v3/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	proto "github.com/cosmos/gogoproto/proto"
+
+	"github.com/babylonlabs-io/babylon/v3/x/btclightclient/types"
 )
 
 type (
@@ -256,6 +258,7 @@ func (k Keeper) GetMainChainFrom(ctx context.Context, startHeight uint32) []*typ
 		headers = append(headers, header)
 		return false
 	}
+	// TODO: caching
 	k.headersState(ctx).IterateForwardHeaders(startHeight, accHeaderFn)
 	return headers
 }

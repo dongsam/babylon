@@ -43,6 +43,7 @@ func (k Keeper) BroadcastBTCHeaders(ctx context.Context, consumerChannelMap map[
 		// Find channels for this consumer using O(1) map lookup
 		channel := consumerChannelMap[consumerID]
 
+		// TODO: state io * N
 		headers := k.GetHeadersToBroadcast(ctx, consumerID, headerCache)
 		if len(headers) == 0 {
 			k.Logger(sdkCtx).Debug("skipping BTC header broadcast for consumer, no headers to broadcast",
@@ -70,6 +71,7 @@ func (k Keeper) BroadcastBTCHeaders(ctx context.Context, consumerChannelMap map[
 			continue
 		}
 
+		// TODO: set only hash or height? need to migration for testnet,,
 		// Update the BSN-specific last sent segment only if we sent to at least one channel
 		k.SetBSNLastSentSegment(ctx, consumerID, &types.BTCChainSegment{
 			BtcHeaders: headers,

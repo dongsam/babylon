@@ -7,11 +7,12 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/babylonlabs-io/babylon/v3/x/zoneconcierge/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types" //nolint:staticcheck
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	"github.com/hashicorp/go-metrics"
+
+	"github.com/babylonlabs-io/babylon/v3/x/zoneconcierge/types"
 )
 
 const (
@@ -24,6 +25,7 @@ const (
 // SendIBCPacket sends an IBC packet to a channel
 // (adapted from https://github.com/cosmos/ibc-go/blob/v5.0.0/modules/apps/transfer/keeper/relay.go)
 func (k Keeper) SendIBCPacket(ctx context.Context, channel channeltypes.IdentifiedChannel, packetData *types.OutboundPacket) error {
+	// TODO: if packet data already cached for marshal, valid, hit the cache
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	// get src/dst ports and channels
 	sourcePort := channel.PortId
@@ -32,6 +34,7 @@ func (k Keeper) SendIBCPacket(ctx context.Context, channel channeltypes.Identifi
 	destinationChannel := channel.Counterparty.ChannelId
 
 	// Validate packet before attempting to send
+	// TODO: bottleneck
 	if err := k.validatePacket(packetData); err != nil {
 		k.Logger(sdkCtx).Error(fmt.Sprintf("packet validation failed for channel %v port %s: %v", destinationChannel, destinationPort, err))
 		return err
@@ -46,9 +49,9 @@ func (k Keeper) SendIBCPacket(ctx context.Context, channel channeltypes.Identifi
 		sdkCtx,
 		sourcePort,
 		sourceChannel,
-		zeroheight,  // no need to set timeout height if timeout timestamp is set
-		timeoutTime, // if the packet is not relayed after this time, then the packet will be time out
-		k.cdc.MustMarshal(packetData),
+		zeroheight,                    // no need to set timeout height if timeout timestamp is set
+		timeoutTime,                   // if the packet is not relayed after this time, then the packet will be time out
+		k.cdc.MustMarshal(packetData), // TODO: bottleneck
 	)
 	if err != nil {
 		k.Logger(sdkCtx).Error(fmt.Sprintf("failed to send IBC packet (sequence number: %d) to channel %v port %s: %v", seq, destinationChannel, destinationPort, err))
@@ -75,6 +78,7 @@ func (k Keeper) SendIBCPacket(ctx context.Context, channel channeltypes.Identifi
 
 // validatePacket performs basic validation on the packet before sending
 func (k Keeper) validatePacket(packetData *types.OutboundPacket) error {
+	// TODO: duplicated marshal, need to get marshaled data
 	packetBytes := k.cdc.MustMarshal(packetData)
 
 	if len(packetBytes) > channeltypes.MaximumPayloadsSize {
