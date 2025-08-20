@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/babylonlabs-io/babylon/v3/app"
-	"github.com/babylonlabs-io/babylon/v3/testutil/datagen"
-	btclctypes "github.com/babylonlabs-io/babylon/v3/x/btclightclient/types"
-	bsctypes "github.com/babylonlabs-io/babylon/v3/x/btcstkconsumer/types"
-	bstypes "github.com/babylonlabs-io/babylon/v3/x/btcstaking/types"
-	"github.com/babylonlabs-io/babylon/v3/x/zoneconcierge"
-	"github.com/babylonlabs-io/babylon/v3/x/zoneconcierge/keeper"
-	"github.com/babylonlabs-io/babylon/v3/x/zoneconcierge/types"
+	"github.com/babylonlabs-io/babylon/v4/app"
+	"github.com/babylonlabs-io/babylon/v4/testutil/datagen"
+	btclctypes "github.com/babylonlabs-io/babylon/v4/x/btclightclient/types"
+	bsctypes "github.com/babylonlabs-io/babylon/v4/x/btcstkconsumer/types"
+	bstypes "github.com/babylonlabs-io/babylon/v4/x/btcstaking/types"
+	"github.com/babylonlabs-io/babylon/v4/x/zoneconcierge"
+	"github.com/babylonlabs-io/babylon/v4/x/zoneconcierge/keeper"
+	"github.com/babylonlabs-io/babylon/v4/x/zoneconcierge/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	connectiontypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
@@ -345,16 +345,16 @@ func setupBTCStakingEventsForEndBlocker(b *testing.B, babylonApp *app.BabylonApp
 			activeDel := &bstypes.BTCStakingConsumerEvent{
 				Event: &bstypes.BTCStakingConsumerEvent_ActiveDel{
 					ActiveDel: &bstypes.ActiveBTCDelegation{
-						BtcPkHex:        fmt.Sprintf("%x", datagen.GenRandomByteArray(r, 33)),
-						FpBtcPkList:     []string{fmt.Sprintf("%x", datagen.GenRandomByteArray(r, 33))},
-						StartHeight:     uint32(i * 10),
-						EndHeight:       uint32(i*10 + 100),
-						TotalSat:        uint64(1000000 + i*10000),
-						StakingTx:       datagen.GenRandomByteArray(r, 200),
-						SlashingTx:      datagen.GenRandomByteArray(r, 150),
+						BtcPkHex:         fmt.Sprintf("%x", datagen.GenRandomByteArray(r, 33)),
+						FpBtcPkList:      []string{fmt.Sprintf("%x", datagen.GenRandomByteArray(r, 33))},
+						StartHeight:      uint32(i * 10),
+						EndHeight:        uint32(i*10 + 100),
+						TotalSat:         uint64(1000000 + i*10000),
+						StakingTx:        datagen.GenRandomByteArray(r, 200),
+						SlashingTx:       datagen.GenRandomByteArray(r, 150),
 						StakingOutputIdx: 0,
-						UnbondingTime:   144,
-						ParamsVersion:   1,
+						UnbondingTime:    144,
+						ParamsVersion:    1,
 					},
 				},
 			}
