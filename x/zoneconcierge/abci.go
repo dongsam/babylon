@@ -24,14 +24,19 @@ func EndBlocker(ctx context.Context, k keeper.Keeper) ([]abci.ValidatorUpdate, e
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
 
 	// Build a map for O(1) channel lookups
+	// TODO: init nil map
 	consumerChannelMap, err := k.GetConsumerChannelMap(ctx)
 	if err != nil {
 		handleBroadcastError(ctx, k, "BuildConsumerChannelMap", err)
 	}
 
 	// Handle BTC headers broadcast with structured error handling
-	if err := k.BroadcastBTCHeaders(ctx, consumerChannelMap); err != nil {
-		handleBroadcastError(ctx, k, "BroadcastBTCHeaders", err)
+	// Only broadcast if BTC light client was modified in this block
+	if k.IsBTCLightClientModified(sdk.UnwrapSDKContext(ctx)) {
+		// TODO: init consumerChannelMap on here to avoid unnecessary DB queries
+		if err := k.BroadcastBTCHeaders(ctx, consumerChannelMap); err != nil {
+			handleBroadcastError(ctx, k, "BroadcastBTCHeaders", err)
+		}
 	}
 
 	// Handle BTC staking consumer events broadcast with structured error handling

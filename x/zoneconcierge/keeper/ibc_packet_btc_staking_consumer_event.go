@@ -22,6 +22,9 @@ func (k Keeper) BroadcastBTCStakingConsumerEvents(
 	consumerChannelMap map[string]channeltypes.IdentifiedChannel,
 ) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	// TODO: init consumerChannelMap if nil to avoid unnecessary DB queries
+
 	if len(consumerChannelMap) == 0 {
 		k.Logger(sdkCtx).Info("skipping BTC staking consumer event broadcast",
 			"reason", "no open channels",

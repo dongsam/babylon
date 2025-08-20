@@ -15,6 +15,7 @@ type (
 	Keeper struct {
 		cdc              codec.BinaryCodec
 		storeService     corestoretypes.KVStoreService
+		tsKey            storetypes.StoreKey
 		ics4Wrapper      types.ICS4Wrapper
 		clientKeeper     types.ClientKeeper
 		connectionKeeper types.ConnectionKeeper
@@ -47,6 +48,7 @@ type (
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService corestoretypes.KVStoreService,
+	tsKey storetypes.StoreKey,
 	ics4Wrapper types.ICS4Wrapper,
 	clientKeeper types.ClientKeeper,
 	connectionKeeper types.ConnectionKeeper,
@@ -67,6 +69,7 @@ func NewKeeper(
 	k := &Keeper{
 		cdc:                 cdc,
 		storeService:        storeService,
+		tsKey:               tsKey,
 		ics4Wrapper:         ics4Wrapper,
 		clientKeeper:        clientKeeper,
 		connectionKeeper:    connectionKeeper,
@@ -134,4 +137,20 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 func (k Keeper) GetPort() string {
 	return types.PortID
+}
+
+// BTC Light Client modification tracking for optimization
+
+var btcLightClientModifiedKey = []byte("btc_light_client_modified")
+
+// SetBTCLightClientModified marks that the BTC light client was modified in this block
+func (k Keeper) SetBTCLightClientModified(ctx sdk.Context) {
+	store := ctx.TransientStore(k.tsKey)
+	store.Set(btcLightClientModifiedKey, []byte{1})
+}
+
+// IsBTCLightClientModified checks if the BTC light client was modified in this block
+func (k Keeper) IsBTCLightClientModified(ctx sdk.Context) bool {
+	store := ctx.TransientStore(k.tsKey)
+	return store.Has(btcLightClientModifiedKey)
 }
