@@ -21,6 +21,12 @@ func (k Keeper) triggerRollBack(ctx context.Context, rollbackFrom, rollbackTo *t
 	if err := CheckRollBackInvariants(rollbackFrom, rollbackTo); err != nil {
 		panic(err)
 	}
+	
+	// Invalidate cache entries from rollback point onwards
+	k.headerCache.InvalidateFromHeight(rollbackTo.Height + 1)
+	// Update cache with new tip after rollback
+	k.headerCache.UpdateTip(rollbackTo)
+	
 	// Trigger AfterBTCRollBack hook
 	k.AfterBTCRollBack(ctx, rollbackFrom, rollbackTo)
 	// Emit BTCRollBack event
@@ -28,6 +34,9 @@ func (k Keeper) triggerRollBack(ctx context.Context, rollbackFrom, rollbackTo *t
 }
 
 func (k Keeper) triggerRollForward(ctx context.Context, headerInfo *types.BTCHeaderInfo) {
+	// Update cache with new tip
+	k.headerCache.UpdateTip(headerInfo)
+	
 	// Trigger AfterBTCRollForward hook
 	k.AfterBTCRollForward(ctx, headerInfo)
 	// Emit BTCRollForward event

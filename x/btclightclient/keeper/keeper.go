@@ -26,6 +26,9 @@ type (
 		btcConfig    bbn.BtcConfig
 		bl           *types.BtcLightClient
 		authority    string
+
+		// Header cache to reduce duplicate store I/O
+		headerCache *types.HeaderCache
 	}
 )
 
@@ -48,6 +51,7 @@ func NewKeeper(
 		btcConfig:    btcConfig,
 		bl:           bl,
 		authority:    authority,
+		headerCache:  types.NewHeaderCache(),
 	}
 }
 
@@ -250,14 +254,49 @@ func (k Keeper) GetHeaderByHeight(ctx context.Context, height uint32) *types.BTC
 // GetMainChainFrom returns the current canonical chain from the given height up to the tip
 // If the height is higher than the tip, it returns an empty slice
 // If startHeight is 0, it returns the entire main chain
+// TODO: considering move caching logic to zc expected keeper
+// Now uses header-level caching to eliminate duplicate store I/O operations
 func (k Keeper) GetMainChainFrom(ctx context.Context, startHeight uint32) []*types.BTCHeaderInfo {
-	headers := make([]*types.BTCHeaderInfo, 0)
-	accHeaderFn := func(header *types.BTCHeaderInfo) bool {
-		headers = append(headers, header)
-		return false
+	// TODO: get current tip from the argument instead of fetching it every time
+	currentTip := k.GetTipInfo(ctx)
+	if currentTip == nil {
+		return nil
 	}
-	// TODO: caching
-	k.headersState(ctx).IterateForwardHeaders(startHeight, accHeaderFn)
+
+	// Validate cache and update tip state if changed
+	if !k.headerCache.IsValid(currentTip) {
+		k.headerCache.UpdateTip(currentTip)
+	}
+
+	// If startHeight is higher than tip, return empty slice
+	if startHeight > currentTip.Height {
+		return []*types.BTCHeaderInfo{}
+	}
+
+	headers := make([]*types.BTCHeaderInfo, 0)
+
+	// Iterate from startHeight to tip, using cache when possible
+	// TODO: ensure ordering is correct, as we iterate from startHeight to tip
+	for height := startHeight; height <= currentTip.Height; height++ {
+		header, err := k.headerCache.GetOrFetch(height, func(h uint32) (*types.BTCHeaderInfo, error) {
+			// Cache miss - fetch from store
+			headerInfo, err := k.headersState(ctx).GetHeaderByHeight(h)
+			if err != nil {
+				return nil, err
+			}
+			return headerInfo, nil
+		})
+
+		if err != nil {
+			// If we can't get a header, stop and return what we have so far
+			break
+		}
+
+		if header != nil {
+			headers = append(headers, header)
+		}
+	}
+
 	return headers
 }
 
@@ -312,4 +351,9 @@ func (k Keeper) GetMainChainReverse(ctx context.Context) []*types.BTCHeaderInfo 
 
 func (k Keeper) GetBTCNet() *chaincfg.Params {
 	return k.btcConfig.NetParams()
+}
+
+// HeaderCache returns the header cache for testing purposes
+func (k Keeper) HeaderCache() *types.HeaderCache {
+	return k.headerCache
 }
