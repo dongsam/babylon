@@ -39,6 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Improvements
 
+- [#1571](https://github.com/babylonlabs-io/babylon/pull/1571) Optimize `x/zoneconcierge` bottlenecks by caching redundant logics.
 - [#1553](https://github.com/babylonlabs-io/babylon/pull/1553) Remove native Coin precompile from token pairs.
 - [#1555](https://github.com/babylonlabs-io/babylon/pull/1555) Create new mergify rule for v4.
 - [#1554](https://github.com/babylonlabs-io/babylon/pull/1554) Bump repo to v4.

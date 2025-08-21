@@ -50,13 +50,8 @@ type SetupOptions struct {
 }
 
 func setup(t *testing.T, blsSigner checkpointingtypes.BlsSigner, withGenesis bool, invCheckPeriod uint, btcConf bbn.SupportedBtcNetwork) (*BabylonApp, GenesisState) {
-	// TODO: temporary fix for benchmark, need to revert
 	db := dbm.NewMemDB()
 	nodeHome := t.TempDir()
-	//db, err := dbm.NewGoLevelDB("tmpgoleveldb", nodeHome, nil)
-	//if err != nil {
-	//	panic(err)
-	//}
 
 	appOptions := make(simsutils.AppOptionsMap, 0)
 	appOptions[flags.FlagHome] = nodeHome // ensure unique folder

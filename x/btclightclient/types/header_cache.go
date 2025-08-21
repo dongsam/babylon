@@ -1,7 +1,6 @@
 package types
 
 import (
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -19,16 +18,9 @@ type HeaderCache struct {
 	tipHeight uint32
 	tipHash   *bbn.BTCHeaderHashBytes
 
-	// TODO: To be removed configuration, It is overengineering
-	maxSize int
-	maxAge  time.Duration
-
 	// TODO: remove temporary statistics for benchmarking
 	hitCount  int64
 	missCount int64
-
-	// concurrency control
-	mu sync.RWMutex
 }
 
 // CachedHeader wraps a header with metadata
@@ -41,8 +33,6 @@ type CachedHeader struct {
 func NewHeaderCache() *HeaderCache {
 	return &HeaderCache{
 		headers: make(map[uint32]*CachedHeader),
-		maxSize: 1000,            // cache up to 1000 headers (~80KB)
-		maxAge:  5 * time.Minute, // headers valid for 5 minutes
 	}
 }
 
@@ -50,10 +40,8 @@ func NewHeaderCache() *HeaderCache {
 func (c *HeaderCache) GetOrFetch(height uint32, fetcher func(uint32) (*BTCHeaderInfo, error)) (*BTCHeaderInfo, error) {
 	// Try cache first
 	if cached, exists := c.headers[height]; exists {
-		if !c.isExpired(cached) {
-			atomic.AddInt64(&c.hitCount, 1)
-			return cached.Header, nil
-		}
+		atomic.AddInt64(&c.hitCount, 1)
+		return cached.Header, nil
 	}
 
 	// Cache miss or expired - fetch from source
@@ -65,11 +53,6 @@ func (c *HeaderCache) GetOrFetch(height uint32, fetcher func(uint32) (*BTCHeader
 
 	// Store in cache
 	if header != nil {
-		// Check cache size and evict if necessary
-		if len(c.headers) >= c.maxSize {
-			c.evictOldestUnsafe()
-		}
-
 		c.headers[height] = &CachedHeader{
 			Header:   header,
 			CachedAt: time.Now(),
@@ -117,7 +100,6 @@ func (c *HeaderCache) InvalidateFromHeight(height uint32) {
 func (c *HeaderCache) Stats() CacheStats {
 	return CacheStats{
 		Size:      len(c.headers),
-		MaxSize:   c.maxSize,
 		HitCount:  atomic.LoadInt64(&c.hitCount),
 		MissCount: atomic.LoadInt64(&c.missCount),
 		TipHeight: c.tipHeight,
@@ -128,7 +110,6 @@ func (c *HeaderCache) Stats() CacheStats {
 // CacheStats provides cache metrics
 type CacheStats struct {
 	Size      int
-	MaxSize   int
 	HitCount  int64
 	MissCount int64
 	TipHeight uint32
@@ -142,30 +123,4 @@ func (stats CacheStats) HitRate() float64 {
 		return 0
 	}
 	return float64(stats.HitCount) / float64(total)
-}
-
-// isExpired checks if a cached header has expired
-func (c *HeaderCache) isExpired(cached *CachedHeader) bool {
-	return time.Since(cached.CachedAt) > c.maxAge
-}
-
-// evictOldestUnsafe removes the oldest cached header
-func (c *HeaderCache) evictOldestUnsafe() {
-	if len(c.headers) == 0 {
-		return
-	}
-
-	var oldestHeight uint32
-	var oldestTime time.Time
-	var first = true
-
-	for height, cached := range c.headers {
-		if first || cached.CachedAt.Before(oldestTime) {
-			oldestHeight = height
-			oldestTime = cached.CachedAt
-			first = false
-		}
-	}
-
-	delete(c.headers, oldestHeight)
 }

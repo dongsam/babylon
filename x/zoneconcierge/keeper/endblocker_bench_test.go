@@ -7,19 +7,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/babylonlabs-io/babylon/v4/app"
-	"github.com/babylonlabs-io/babylon/v4/testutil/datagen"
-	btclctypes "github.com/babylonlabs-io/babylon/v4/x/btclightclient/types"
-	bsctypes "github.com/babylonlabs-io/babylon/v4/x/btcstkconsumer/types"
-	bstypes "github.com/babylonlabs-io/babylon/v4/x/btcstaking/types"
-	"github.com/babylonlabs-io/babylon/v4/x/zoneconcierge"
-	"github.com/babylonlabs-io/babylon/v4/x/zoneconcierge/keeper"
-	"github.com/babylonlabs-io/babylon/v4/x/zoneconcierge/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	connectiontypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	ibctmtypes "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 	"github.com/stretchr/testify/require"
+
+	"github.com/babylonlabs-io/babylon/v4/app"
+	"github.com/babylonlabs-io/babylon/v4/testutil/datagen"
+	btclctypes "github.com/babylonlabs-io/babylon/v4/x/btclightclient/types"
+	bstypes "github.com/babylonlabs-io/babylon/v4/x/btcstaking/types"
+	bsctypes "github.com/babylonlabs-io/babylon/v4/x/btcstkconsumer/types"
+	"github.com/babylonlabs-io/babylon/v4/x/zoneconcierge"
+	"github.com/babylonlabs-io/babylon/v4/x/zoneconcierge/keeper"
+	"github.com/babylonlabs-io/babylon/v4/x/zoneconcierge/types"
 )
 
 // BenchmarkEndBlockerPerformance benchmarks the full EndBlocker execution
@@ -251,7 +252,7 @@ func setupConsumersForEndBlocker(b *testing.B, babylonApp *app.BabylonApp, ctx s
 		setupIBCInfrastructureForEndBlocker(b, babylonApp, ctx, consumerID, i)
 
 		// Setup varying last sent segments to trigger different logic paths
-		if i%3 == 0 {
+		if i%3 == 0 { //nolint:gocritic
 			// Some consumers have no previous headers (first-time broadcast)
 			continue
 		} else if i%3 == 1 {

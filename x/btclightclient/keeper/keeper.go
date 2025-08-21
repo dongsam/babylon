@@ -7,14 +7,16 @@ import (
 	corestoretypes "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 
-	bbn "github.com/babylonlabs-io/babylon/v4/types"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/wire"
 
-	"github.com/babylonlabs-io/babylon/v4/x/btclightclient/types"
+	bbn "github.com/babylonlabs-io/babylon/v4/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	proto "github.com/cosmos/gogoproto/proto"
+
+	"github.com/babylonlabs-io/babylon/v4/x/btclightclient/types"
 )
 
 type (
@@ -254,7 +256,6 @@ func (k Keeper) GetHeaderByHeight(ctx context.Context, height uint32) *types.BTC
 // GetMainChainFrom returns the current canonical chain from the given height up to the tip
 // If the height is higher than the tip, it returns an empty slice
 // If startHeight is 0, it returns the entire main chain
-// TODO: considering move caching logic to zc expected keeper
 // Now uses header-level caching to eliminate duplicate store I/O operations
 func (k Keeper) GetMainChainFrom(ctx context.Context, startHeight uint32) []*types.BTCHeaderInfo {
 	// TODO: get current tip from the argument instead of fetching it every time

@@ -191,7 +191,6 @@ func (k Keeper) GetHeadersToBroadcast(ctx context.Context, consumerID string, he
 		return k.getDeepEnoughBTCHeaders(ctx)
 	}
 
-	// TODO: caching
 	headersToSend := k.btclcKeeper.GetMainChainFrom(ctx, initHeader.Height+1)
 
 	return headersToSend

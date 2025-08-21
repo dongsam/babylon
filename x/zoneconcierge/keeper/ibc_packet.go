@@ -7,11 +7,12 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/babylonlabs-io/babylon/v4/x/zoneconcierge/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types" //nolint:staticcheck
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	"github.com/hashicorp/go-metrics"
+
+	"github.com/babylonlabs-io/babylon/v4/x/zoneconcierge/types"
 )
 
 const (
@@ -66,9 +67,9 @@ func (k Keeper) SendIBCPacketWithCache(ctx context.Context, channel channeltypes
 		sdkCtx,
 		sourcePort,
 		sourceChannel,
-		zeroheight,                     // no need to set timeout height if timeout timestamp is set
-		timeoutTime,                    // if the packet is not relayed after this time, then the packet will be time out
-		marshaledData.MarshaledData,    // Use pre-marshaled data
+		zeroheight,                  // no need to set timeout height if timeout timestamp is set
+		timeoutTime,                 // if the packet is not relayed after this time, then the packet will be time out
+		marshaledData.MarshaledData, // Use pre-marshaled data
 	)
 	if err != nil {
 		k.Logger(sdkCtx).Error(fmt.Sprintf("failed to send IBC packet (sequence number: %d) to channel %v port %s: %v", seq, destinationChannel, destinationPort, err))
@@ -94,7 +95,7 @@ func (k Keeper) SendIBCPacketWithCache(ctx context.Context, channel channeltypes
 }
 
 // validatePacket performs basic validation on the packet before sending
-func (k Keeper) validatePacket(packetData *types.OutboundPacket) error {
+func (k Keeper) validatePacket(packetData *types.OutboundPacket) error { //nolint:unused // for future use
 	// Marshal the data for validation
 	packetBytes := k.cdc.MustMarshal(packetData)
 	return k.validateMarshaledPacketSize(packetBytes)
