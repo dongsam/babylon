@@ -844,6 +844,20 @@ func (mr *MockBTCStakingKeeperMockRecorder) GetAllBTCStakingConsumerIBCPackets(c
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllBTCStakingConsumerIBCPackets", reflect.TypeOf((*MockBTCStakingKeeper)(nil).GetAllBTCStakingConsumerIBCPackets), ctx)
 }
 
+// HasBTCStakingConsumerIBCPackets mocks base method.
+func (m *MockBTCStakingKeeper) HasBTCStakingConsumerIBCPackets(ctx context.Context) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasBTCStakingConsumerIBCPackets", ctx)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// HasBTCStakingConsumerIBCPackets indicates an expected call of HasBTCStakingConsumerIBCPackets.
+func (mr *MockBTCStakingKeeperMockRecorder) HasBTCStakingConsumerIBCPackets(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasBTCStakingConsumerIBCPackets", reflect.TypeOf((*MockBTCStakingKeeper)(nil).HasBTCStakingConsumerIBCPackets), ctx)
+}
+
 // GetFinalityProvider mocks base method.
 func (m *MockBTCStakingKeeper) GetFinalityProvider(ctx context.Context, fpBTCPK []byte) (*types2.FinalityProvider, error) {
 	m.ctrl.T.Helper()

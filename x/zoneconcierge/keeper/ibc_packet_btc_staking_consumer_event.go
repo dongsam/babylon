@@ -15,6 +15,11 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 )
 
+// HasBTCStakingConsumerIBCPackets checks if any BTC staking consumer IBC packets exist in the store.
+func (k Keeper) HasBTCStakingConsumerIBCPackets(ctx context.Context) bool {
+	return k.bsKeeper.HasBTCStakingConsumerIBCPackets(ctx)
+}
+
 // BroadcastBTCStakingConsumerEvents retrieves all BTC staking consumer events from the event store,
 // sends them to corresponding consumers via open IBC channels, and then deletes the events from the store.
 func (k Keeper) BroadcastBTCStakingConsumerEvents(
@@ -126,6 +131,7 @@ func (k Keeper) HandleIBCChannelCreation(
 	// Get current tip height for logging
 	currentTip := k.btclcKeeper.GetTipInfo(ctx)
 
+	k.MarkNewConsumerChannel(ctx, clientID)
 	k.Logger(ctx).Info("IBC channel created successfully",
 		"consumerID", clientID,
 		"channelID", channelID,

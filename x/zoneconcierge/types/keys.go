@@ -17,6 +17,9 @@ const (
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_zc"
 
+	// TransientStoreKey defines the transient store key for tracking BTC header broadcasting triggers
+	TransientStoreKey = "transient_zc"
+
 	// Version defines the current version the IBC module supports
 	Version = "zoneconcierge-1"
 

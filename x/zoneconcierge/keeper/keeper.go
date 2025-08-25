@@ -34,6 +34,9 @@ type (
 		// Typically, this should be the x/gov module account.
 		authority string
 
+		// Transient store key for tracking BTC header broadcasting triggers
+		transientKey storetypes.StoreKey
+
 		// Collections for KV store management
 		Schema                collections.Schema
 		ParamsCollection      collections.Item[types.Params]
@@ -47,6 +50,7 @@ type (
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService corestoretypes.KVStoreService,
+	transientKey storetypes.StoreKey,
 	ics4Wrapper types.ICS4Wrapper,
 	clientKeeper types.ClientKeeper,
 	connectionKeeper types.ConnectionKeeper,
@@ -81,6 +85,7 @@ func NewKeeper(
 		bsKeeper:            bsKeeper,
 		btcStkKeeper:        btcStkKeeper,
 		authority:           authority,
+		transientKey:        transientKey,
 
 		ParamsCollection: collections.NewItem[types.Params](
 			sb,
